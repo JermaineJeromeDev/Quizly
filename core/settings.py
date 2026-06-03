@@ -11,19 +11,21 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 ENV_PATH = BASE_DIR.parent / '.env'
-load_dotenv(dotenv_path=ENV_PATH)  
+load_dotenv(dotenv_path=ENV_PATH)
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 if not SECRET_KEY:
-    raise ValueError("DJANGO_SECRET_KEY ist nicht in den Umgebungsvariablen gesetzt.")
+    raise ValueError(
+        "DJANGO_SECRET_KEY ist nicht in den Umgebungsvariablen gesetzt.")
 
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
@@ -44,7 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',  
+    'rest_framework_simplejwt.token_blacklist',
 
     'auth_app',
 ]
@@ -151,7 +153,6 @@ REST_FRAMEWORK = {
     )
 }
 
-from datetime import timedelta
 
 # SimpleJWT Konfiguration für HttpOnly Cookies
 SIMPLE_JWT = {
@@ -165,4 +166,3 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
 }
-
