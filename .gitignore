@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-**/__pycache__/
+__pycache__/
 *.py[codz]
 *$py.class
 
@@ -37,11 +37,11 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-**/htmlcov/
+htmlcov/
 .tox/
 .nox/
-**/.coverage
-**/.coverage.*
+.coverage
+.coverage.*
 .cache
 nosetests.xml
 coverage.xml
@@ -49,7 +49,7 @@ coverage.xml
 *.py.cover
 *.lcov
 .hypothesis/
-**/.pytest_cache/
+.pytest_cache/
 cover/
 
 # Translations
