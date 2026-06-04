@@ -31,3 +31,35 @@ def extract_serializer_error(errors: dict) -> str:
             return field_errors[0]
 
     return "Ungültige Daten."
+
+
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
+def generate_tokens_for_user(user) -> dict:
+    """Generiert ein Zugriffs- und ein Refresh-Token fuer den User."""
+    refresh = RefreshToken.for_user(user)
+    return {
+        "refresh": str(refresh),
+        "access": str(refresh.access_token),
+    }
+
+
+def set_auth_cookies(response, tokens: dict) -> None:
+    """Setzt das Access- und Refresh-Token als sichere HttpOnly-Cookies."""
+    response.set_cookie(
+        key="access_token",
+        value=tokens["access"],
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=900,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=tokens["refresh"],
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=604800,
+    )

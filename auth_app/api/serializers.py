@@ -29,3 +29,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         """Erstellt den Benutzer sicher mit gehashtem Passwort."""
         validated_data.pop("confirmed_password")
         return User.objects.create_user(**validated_data)
+
+
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
