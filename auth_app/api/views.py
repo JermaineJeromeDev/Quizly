@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .permissions import IsCookieAuthenticated
@@ -79,4 +79,27 @@ def logout_user(request) -> Response:
     msg = "Log-Out successfully! All Tokens will be deleted. Refresh token is now invalid."
     response = Response({"detail": msg}, status=status.HTTP_200_OK)
     delete_auth_cookies(response)
+    return response
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def refresh_token_view(request) -> Response:
+    """Erneuert das Access-Token basierend auf dem Refresh-Cookie."""
+    refresh_token = request.COOKIES.get("refresh_token")
+    if not refresh_token:
+        return Response(
+            {"detail": "Refresh Token fehlt."}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    try:
+        refresh = RefreshToken(refresh_token)
+        new_access = str(refresh.access_token)
+    except (InvalidToken, TokenError):
+        return Response(
+            {"detail": "Refresh Token ungültig."}, status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    response = Response({"detail": "Token refreshed"}, status=status.HTTP_200_OK)
+    set_auth_cookies(response, {"access": new_access, "refresh": refresh_token})
     return response
