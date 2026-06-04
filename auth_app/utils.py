@@ -63,3 +63,9 @@ def set_auth_cookies(response, tokens: dict) -> None:
         samesite="Lax",
         max_age=604800,
     )
+
+
+def delete_auth_cookies(response) -> None:
+    """Löscht die Access- und Refresh-Token-Cookies durch Leeren."""
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
