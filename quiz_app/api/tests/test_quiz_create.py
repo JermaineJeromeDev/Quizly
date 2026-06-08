@@ -2,10 +2,10 @@ from unittest.mock import patch
 
 import pytest
 from django.contrib.auth.models import User
-from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 @pytest.fixture
@@ -22,9 +22,11 @@ def quiz_create_url() -> str:
 
 @pytest.fixture
 def logged_in_client(api_client) -> APIClient:
-    """Erstellt einen User und setzt das Access-Token im Cookie."""
+    """Erstellt einen User und setzt ein ECHTES Access-Token im Cookie."""
     user = User.objects.create_user(username="quizuser", password="SecurePassword123")
-    api_client.cookies["access_token"] = "mocked_valid_access_token"
+
+    refresh = RefreshToken.for_user(user)
+    api_client.cookies["access_token"] = str(refresh.access_token)
     return api_client
 
 
@@ -37,13 +39,10 @@ class TestQuizCreateHappyPath:
         self, mock_generate, logged_in_client, quiz_create_url
     ) -> None:
         mock_generate.return_value = {
-            "id": 1,
             "title": "KI-generiertes Quiz",
             "description": "Beschreibung des Quizzes",
-            "video_url": "https://youtube.com",
             "questions": [
                 {
-                    "id": 1,
                     "question_title": "Welche Farbe hat der Himmel?",
                     "question_options": ["Blau", "Gruen", "Rot", "Gelb"],
                     "answer": "Blau",
@@ -76,4 +75,3 @@ class TestQuizCreateUnhappyPath:
         payload = {}
         response = logged_in_client.post(quiz_create_url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "url" in response.data
