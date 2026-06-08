@@ -41,3 +41,23 @@ def create_quiz_view(request) -> Response:
 
     serializer = QuizSerializer(quiz)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET"])
+@permission_classes([IsCookieAuthenticated])
+def quiz_detail_view(request, quiz_id: int) -> Response:
+    """Ruft ein spezifisches Quiz ab und prueft die Benutzerrechte (DoD-konform)."""
+    try:
+        quiz = Quiz.objects.prefetch_related("questions").get(id=quiz_id)
+    except Quiz.DoesNotExist:
+        return Response(
+            {"detail": "Quiz nicht gefunden."}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    if quiz.user != request.user:
+        return Response(
+            {"detail": "Zugriff verweigert."}, status=status.HTTP_403_FORBIDDEN
+        )
+
+    serializer = QuizSerializer(quiz)
+    return Response(serializer.data, status=status.HTTP_200_OK)
