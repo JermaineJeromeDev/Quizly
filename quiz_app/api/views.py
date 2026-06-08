@@ -43,7 +43,7 @@ def create_quiz_view(request) -> Response:
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH"])
 @permission_classes([IsCookieAuthenticated])
 def quiz_detail_view(request, quiz_id: int) -> Response:
     """Ruft ein spezifisches Quiz ab und prueft die Benutzerrechte (DoD-konform)."""
@@ -58,6 +58,13 @@ def quiz_detail_view(request, quiz_id: int) -> Response:
         return Response(
             {"detail": "Zugriff verweigert."}, status=status.HTTP_403_FORBIDDEN
         )
+
+    if request.method == "PATCH":
+        serializer = QuizSerializer(quiz, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     serializer = QuizSerializer(quiz)
     return Response(serializer.data, status=status.HTTP_200_OK)
