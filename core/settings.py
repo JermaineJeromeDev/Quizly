@@ -165,3 +165,7 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 }
+
+# Media-Dateien Konfiguration
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
