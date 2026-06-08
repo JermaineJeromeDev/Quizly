@@ -43,7 +43,7 @@ def create_quiz_view(request) -> Response:
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@api_view(["GET", "PATCH"])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsCookieAuthenticated])
 def quiz_detail_view(request, quiz_id: int) -> Response:
     """Ruft ein spezifisches Quiz ab und prueft die Benutzerrechte (DoD-konform)."""
@@ -65,6 +65,10 @@ def quiz_detail_view(request, quiz_id: int) -> Response:
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == "DELETE":
+        quiz.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     serializer = QuizSerializer(quiz)
     return Response(serializer.data, status=status.HTTP_200_OK)
