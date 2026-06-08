@@ -71,3 +71,36 @@ class TestQuizDetailUnhappyPath:
         url = reverse("quiz_detail", kwargs={"quiz_id": 9999})
         response = client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db
+class TestQuizDetailHappyPath:
+    def test_patch_quiz_detail_success(self, logged_in_setup, create_own_quiz) -> None:
+        """Testet das erfolgreiche partielle Updaten eines eigenen Quizzes."""
+        client, _ = logged_in_setup
+        url = reverse("quiz_detail", kwargs={"quiz_id": create_own_quiz.id})
+        payload = {"title": "Partially Updated Title"}
+
+        response = client.patch(url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["title"] == "Partially Updated Title"
+        assert response.data["description"] == create_own_quiz.description
+
+
+@pytest.mark.django_db
+class TestQuizDetailUnhappyPath:
+    def test_patch_quiz_foreign_forbidden(self, logged_in_setup) -> None:
+        """Testet, dass man fremde Quizze nicht per PATCH manipulieren darf."""
+        client, _ = logged_in_setup
+        foreign_user = User.objects.create_user(
+            username="stranger", password="Password123"
+        )
+        foreign_quiz = Quiz.objects.create(
+            user=foreign_user, title="Fremdes Quiz", video_url="https://url.com"
+        )
+
+        url = reverse("quiz_detail", kwargs={"quiz_id": foreign_quiz.id})
+        payload = {"title": "Hack-Versuch"}
+
+        response = client.patch(url, payload, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
