@@ -104,3 +104,39 @@ class TestQuizDetailUnhappyPath:
 
         response = client.patch(url, payload, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestQuizDetailHappyPath:
+
+    def test_delete_quiz_success(self, logged_in_setup, create_own_quiz) -> None:
+        """Testet das erfolgreiche Löschen eines eigenen Quizzes."""
+        client, _ = logged_in_setup
+        url = reverse("quiz_detail", kwargs={"quiz_id": create_own_quiz.id})
+
+        response = client.delete(url)
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+
+        assert not Quiz.objects.filter(id=create_own_quiz.id).exists()
+
+
+@pytest.mark.django_db
+class TestQuizDetailUnhappyPath:
+
+    def test_delete_quiz_foreign_forbidden(self, logged_in_setup) -> None:
+        """Testet, dass man fremde Quizze nicht per DELETE löschen darf."""
+        client, _ = logged_in_setup
+        foreign_user = User.objects.create_user(
+            username="intruder", password="Password123"
+        )
+        foreign_quiz = Quiz.objects.create(
+            user=foreign_user, title="Fremdes Quiz", video_url="https://url.com"
+        )
+
+        url = reverse("quiz_detail", kwargs={"quiz_id": foreign_quiz.id})
+
+        response = client.delete(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        assert Quiz.objects.filter(id=foreign_quiz.id).exists()
