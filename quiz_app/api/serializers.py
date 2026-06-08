@@ -20,7 +20,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 class QuizSerializer(serializers.ModelSerializer):
     """Konvertiert das Quiz samt verschachtelten Fragen fuer die API-Response."""
 
-    questions = QuestionSerializer(many=True, read_ok=True)
+    questions = QuestionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Quiz
