@@ -4,7 +4,7 @@ from .models import Question, Quiz
 
 
 class QuestionInline(admin.TabularInline):
-    """Ermöglicht das direkte Bearbeiten von Fragen innerhalb eines Quizzes."""
+    """Enable inline editing and creation of nested Question records directly inside the Quiz administration view."""
 
     model = Question
     extra = 1
@@ -12,7 +12,7 @@ class QuestionInline(admin.TabularInline):
 
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
-    """Konfiguriert die Quiz-Verwaltung im Admin-Panel."""
+    """Configure the layout, search metrics, and tabular inline representations for the Quiz model within the Django admin panel."""
 
     list_display = ("title", "user", "created_at", "updated_at")
     search_fields = ("title", "description", "video_url")
@@ -21,7 +21,7 @@ class QuizAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    """Konfiguriert die Fragen-Verwaltung im Admin-Panel."""
+    """Configure specialized list visualizations, structural filters, and search boundaries for individual Question models."""
 
     list_display = ("question_title", "quiz", "answer", "created_at")
     search_fields = ("question_title", "answer")

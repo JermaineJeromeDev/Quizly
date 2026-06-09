@@ -1,3 +1,5 @@
+"""URL routing configuration for the quiz application endpoints."""
+
 from django.urls import path
 
 from .views import create_quiz_view, quiz_detail_view

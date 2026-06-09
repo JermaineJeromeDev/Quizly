@@ -10,19 +10,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 @pytest.fixture
 def api_client() -> APIClient:
-    """Bereitet den APIClient fuer die Tests vor."""
+    """Prepare the APIClient instance for executing HTTP requests in tests."""
     return APIClient()
 
 
 @pytest.fixture
 def quiz_create_url() -> str:
-    """Gibt die URL fuer den Quiz-Erstellungs-Endpunkt zurueck."""
+    """Return the resolved URL path for the quiz creation and list endpoint."""
     return reverse("quiz_list_create")
 
 
 @pytest.fixture
 def logged_in_client(api_client) -> APIClient:
-    """Erstellt einen User und setzt ein ECHTES Access-Token im Cookie."""
+    """Create a test user and configure the API client with a valid cryptographic JWT access cookie."""
     user = User.objects.create_user(username="quizuser", password="SecurePassword123")
 
     refresh = RefreshToken.for_user(user)
@@ -32,12 +32,13 @@ def logged_in_client(api_client) -> APIClient:
 
 @pytest.mark.django_db
 class TestQuizCreateHappyPath:
-    """Umfasst alle erfolgreichen Szenarien fuer die Quiz-Erstellung."""
+    """Contain all successful test scenarios related to AI-powered quiz generation."""
 
     @patch("quiz_app.api.views.generate_quiz_from_youtube")
     def test_create_quiz_success(
         self, mock_generate, logged_in_client, quiz_create_url
     ) -> None:
+        """Verify that a valid YouTube URL successfully creates a quiz object with nested questions using mocked AI handlers."""
         mock_generate.return_value = {
             "title": "KI-generiertes Quiz",
             "description": "Beschreibung des Quizzes",
@@ -64,14 +65,16 @@ class TestQuizCreateHappyPath:
 
 @pytest.mark.django_db
 class TestQuizCreateUnhappyPath:
-    """Umfasst alle Fehlerszenarien fuer die Quiz-Erstellung."""
+    """Contain all validation, constraint, and authentication failure scenarios for quiz creation."""
 
     def test_create_quiz_unauthenticated(self, api_client, quiz_create_url) -> None:
+        """Ensure that unauthenticated requests to generate a quiz are blocked with a 401 Unauthorized status."""
         payload = {"url": "https://youtube.com"}
         response = api_client.post(quiz_create_url, payload, format="json")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_create_quiz_missing_url(self, logged_in_client, quiz_create_url) -> None:
+        """Ensure that requests with an empty payload or missing URL key are rejected with a 400 Bad Request status."""
         payload = {}
         response = logged_in_client.post(quiz_create_url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST

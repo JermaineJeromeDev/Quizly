@@ -7,19 +7,19 @@ from rest_framework.test import APIClient
 
 @pytest.fixture
 def api_client() -> APIClient:
-    """Bereitet den APIClient fuer die Tests vor."""
+    """Prepare the APIClient instance for executing HTTP requests in tests."""
     return APIClient()
 
 
 @pytest.fixture
 def login_url() -> str:
-    """Gibt die URL fuer den Login-Endpunkt zurueck."""
+    """Return the resolved URL path for the authentication login endpoint."""
     return reverse("login")
 
 
 @pytest.fixture
 def create_test_user() -> User:
-    """Erstellt einen Test-User in der Test-Datenbank."""
+    """Create and persist a standard test user profile inside the test database."""
     return User.objects.create_user(
         username="loginuser", email="login@example.com", password="SecurePassword123"
     )
@@ -27,17 +27,16 @@ def create_test_user() -> User:
 
 @pytest.mark.django_db
 class TestLoginHappyPath:
-    """Umfasst alle erfolgreichen Szenarien fuer den Login."""
+    """Contain all successful test scenarios related to user login operations."""
 
     def test_login_success(self, api_client, login_url, create_test_user) -> None:
+        """Verify that valid credentials correctly set secure HttpOnly authentication cookies."""
         payload = {"username": "loginuser", "password": "SecurePassword123"}
         response = api_client.post(login_url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["detail"] == "Login successfully!"
         assert response.data["user"]["username"] == "loginuser"
-
-        # Pruefen, ob die Cookies gesetzt wurden
         assert "access_token" in response.cookies
         assert "refresh_token" in response.cookies
         assert response.cookies["access_token"]["httponly"] is True
@@ -45,11 +44,12 @@ class TestLoginHappyPath:
 
 @pytest.mark.django_db
 class TestLoginUnhappyPath:
-    """Umfasst alle Fehlerszenarien (falsche Daten)."""
+    """Contain all error and failure scenarios for invalid user login attempts."""
 
     def test_login_invalid_credentials(
         self, api_client, login_url, create_test_user
     ) -> None:
+        """Ensure incorrect passwords trigger a 401 response and don't issue any auth cookies."""
         payload = {"username": "loginuser", "password": "WrongPassword"}
         response = api_client.post(login_url, payload, format="json")
 

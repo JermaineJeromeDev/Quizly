@@ -1,3 +1,5 @@
+"""Defines URL patterns for the authentication API endpoints, including user registration, login, logout, and token refresh."""
+
 from django.urls import path
 
 from .views import login_user, logout_user, refresh_token_view, register_user

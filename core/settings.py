@@ -18,14 +18,11 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ENV_PATH = BASE_DIR.parent / ".env"
-
-load_dotenv(dotenv_path=ENV_PATH, override=True)
+load_dotenv(dotenv_path=BASE_DIR / ".env", override=True)
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
-
 if not SECRET_KEY:
-    raise ValueError("DJANGO_SECRET_KEY ist nicht in den Umgebungsvariablen gesetzt.")
+    raise ValueError("DJANGO_SECRET_KEY is not set in the environment variables.")
 
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 

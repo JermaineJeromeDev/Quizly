@@ -3,7 +3,7 @@ from django.db import models
 
 
 class Quiz(models.Model):
-    """Speichert die Metadaten eines generierten Quizzes."""
+    """Represent the metadata and ownership details of an AI-generated video quiz instance."""
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quizzes")
     title = models.CharField(max_length=255)
@@ -17,11 +17,12 @@ class Quiz(models.Model):
         verbose_name_plural = "Quizzes"
 
     def __str__(self) -> str:
+        """Return the string representation of the quiz, displaying its title."""
         return self.title
 
 
 class Question(models.Model):
-    """Speichert eine einzelne Frage, die zu einem Quiz gehoert."""
+    """Represent a single multiple-choice question structurally tied to a specific quiz parent."""
 
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
     question_title = models.CharField(max_length=500)
@@ -31,4 +32,5 @@ class Question(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
+        """Return the string representation of the question, displaying its title text."""
         return self.question_title

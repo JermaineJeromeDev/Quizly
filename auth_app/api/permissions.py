@@ -4,9 +4,10 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 
 class IsCookieAuthenticated(BasePermission):
-    """Prueft, ob der User ein gueltiges Access-Token im Cookie besitzt."""
+    """Determine if the request user possesses a valid JWT access token stored in HTTP-Only cookies."""
 
     def has_permission(self, request, view) -> bool:
+        """Validate the cookie-based JWT token and attach the authenticated user to the request object."""
         access_token = request.COOKIES.get("access_token")
         if not access_token:
             return False

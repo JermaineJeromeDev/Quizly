@@ -9,19 +9,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 @pytest.fixture
 def api_client() -> APIClient:
-    """Bereitet den APIClient fuer die Tests vor."""
+    """Prepare the APIClient instance for executing HTTP requests in tests."""
     return APIClient()
 
 
 @pytest.fixture
 def quiz_list_url() -> str:
-    """Gibt die URL fuer den Quiz-Listen-Endpunkt zurueck."""
+    """Return the resolved URL path for the quiz creation and list endpoint."""
     return reverse("quiz_list_create")
 
 
 @pytest.fixture
 def logged_in_setup(api_client) -> tuple[APIClient, User]:
-    """Erstellt einen User und setzt ein echtes Access-Token im Cookie."""
+    """Create a test user and configure the API client with a valid cryptographic JWT access cookie."""
     user = User.objects.create_user(username="listuser", password="SecurePassword123")
     refresh = RefreshToken.for_user(user)
     api_client.cookies["access_token"] = str(refresh.access_token)
@@ -30,9 +30,10 @@ def logged_in_setup(api_client) -> tuple[APIClient, User]:
 
 @pytest.mark.django_db
 class TestQuizListHappyPath:
-    """Umfasst alle erfolgreichen Szenarien fuer das Abrufen der Quiz-Liste."""
+    """Contain all successful test scenarios related to retrieving the user's generated quiz overview list."""
 
     def test_get_quizzes_success(self, logged_in_setup, quiz_list_url) -> None:
+        """Verify that an authorized user can successfully fetch an exhaustive list of their own quizzes."""
         client, user = logged_in_setup
 
         quiz = Quiz.objects.create(
@@ -59,8 +60,9 @@ class TestQuizListHappyPath:
 
 @pytest.mark.django_db
 class TestQuizListUnhappyPath:
-    """Umfasst alle Fehlerszenarien fuer das Abrufen der Quiz-Liste."""
+    """Contain all validation, constraint, and authentication failure scenarios for retrieving quiz lists."""
 
     def test_get_quizzes_unauthenticated(self, api_client, quiz_list_url) -> None:
+        """Ensure that unauthenticated requests to view quiz catalogs are blocked with a 401 Unauthorized status."""
         response = api_client.get(quiz_list_url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED

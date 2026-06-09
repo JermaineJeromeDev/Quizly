@@ -19,7 +19,7 @@ from .serializers import UserLoginSerializer, UserRegisterSerializer
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register_user(request) -> Response:
-    """Registriert einen neuen Benutzer via Serializer."""
+    """Validate registration payload and provision a new user account profile."""
     serializer = UserRegisterSerializer(data=request.data)
 
     if not serializer.is_valid():
@@ -35,7 +35,7 @@ def register_user(request) -> Response:
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login_user(request) -> Response:
-    """Loggt den User ein und setzt die JWT-Cookies (DoD-konform)."""
+    """Verify user credentials and issue secure HTTP-Only authorization cookies."""
     serializer = UserLoginSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
@@ -67,7 +67,7 @@ def login_user(request) -> Response:
 @api_view(["POST"])
 @permission_classes([IsCookieAuthenticated])
 def logout_user(request) -> Response:
-    """Loggt den User aus, blacklisted das Token und loescht Cookies."""
+    """Terminate the active user session, blacklist the refresh token, and clear cookies."""
     refresh_token = request.COOKIES.get("refresh_token")
 
     if refresh_token:
@@ -85,7 +85,7 @@ def logout_user(request) -> Response:
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def refresh_token_view(request) -> Response:
-    """Erneuert das Access-Token basierend auf dem Refresh-Cookie."""
+    """Validate the HTTP-Only refresh token cookie to issue a fresh access token cookie."""
     refresh_token = request.COOKIES.get("refresh_token")
     if not refresh_token:
         return Response(

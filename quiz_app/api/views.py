@@ -10,7 +10,7 @@ from rest_framework.response import Response
 @api_view(["GET", "POST"])
 @permission_classes([IsCookieAuthenticated])
 def create_quiz_view(request) -> Response:
-    """Verwaltet das Abrufen aller Quizzes (GET) und das Erstellen eines neuen Quizzes (POST)."""
+    """Handle listing all quizzes for the active user (GET) or provisioning a new AI-generated quiz via a YouTube URL (POST)."""
     if request.method == "GET":
         quizzes = Quiz.objects.filter(user=request.user).prefetch_related("questions")
         serializer = QuizSerializer(quizzes, many=True)
@@ -46,7 +46,7 @@ def create_quiz_view(request) -> Response:
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsCookieAuthenticated])
 def quiz_detail_view(request, quiz_id: int) -> Response:
-    """Ruft ein spezifisches Quiz ab und prueft die Benutzerrechte (DoD-konform)."""
+    """Fetch details (GET), partially modify fields (PATCH), or permanently erase (DELETE) a specific quiz instance."""
     try:
         quiz = Quiz.objects.prefetch_related("questions").get(id=quiz_id)
     except Quiz.DoesNotExist:

@@ -47,7 +47,7 @@ Unlike standard Django applications, this project relies on **FFmpeg** to extrac
    ```
 3. **Environment Variables**:
    ```bash
-   cp ../.env.template ../.env
+   cp .env.template .env
    # Update the values inside your private .env file in the root folder!
    ```
 4. **Database & Server**:
@@ -164,7 +164,7 @@ Dieses Projekt benötigt zwingend **FFmpeg** auf Systemebene, um die Audiokonver
    ```
 3. **Umgebungsvariablen anlegen**:
    ```bash
-   cp ../.env.template ../.env
+   cp .env.template .env
    # Befülle die .env-Datei im Stammverzeichnis mit deinen echten API-Keys!
    ```
 4. **Migrationen & Server starten**:

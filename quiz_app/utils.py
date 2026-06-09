@@ -10,7 +10,7 @@ from google.genai.errors import ServerError
 
 
 def download_youtube_audio(video_url: str) -> str:
-    """Laedt die Tonspur eines YouTube-Videos lokal als MP3 herunter."""
+    """Extract and download the audio track from a YouTube video locally as an MP3 file."""
     output_path = os.path.join(settings.BASE_DIR, "media", "audio", "%(id)s.%(ext)s")
     ydl_opts = {
         "format": "bestaudio/best",
@@ -29,7 +29,7 @@ def download_youtube_audio(video_url: str) -> str:
 
 
 def transcribe_audio_file(file_path: str) -> str:
-    """Transkribiert eine lokale Audiodatei mit Whisper AI in Text."""
+    """Transcribe a local audio file into plain text using Whisper AI and clean up the file afterward."""
     model = whisper.load_model("base")
     result = model.transcribe(file_path)
     if os.path.exists(file_path):
@@ -38,7 +38,7 @@ def transcribe_audio_file(file_path: str) -> str:
 
 
 def build_gemini_prompt(transcript: str) -> str:
-    """Baut den Prompt und die JSON-Strukturvorgabe fuer Gemini auf."""
+    """Construct the structured text prompt and target JSON schema constraints for the Gemini API model."""
     return f"""
     Basierend auf folgendem Transkript eines Videos, erstelle ein Quiz mit genau 10 Fragen.
     Jede Frage muss exakt 4 Antwortmoeglichkeiten besitzen. Eine davon ist die korrekte Antwort.
@@ -62,7 +62,7 @@ def build_gemini_prompt(transcript: str) -> str:
 
 
 def execute_gemini_call(client, model_name: str, prompt: str) -> str:
-    """Fuehrt den eigentlichen API-Aufruf fuer ein spezifisches Modell aus."""
+    """Execute the concrete structural text content generation API request for a targeted Gemini model."""
     response = client.models.generate_content(
         model=model_name,
         contents=prompt,
@@ -72,7 +72,7 @@ def execute_gemini_call(client, model_name: str, prompt: str) -> str:
 
 
 def generate_quiz_with_gemini(transcript: str) -> dict:
-    """Generiert das Quiz mit automatischem Fallback bei Serverueberlastung."""
+    """Orchestrate the JSON quiz dataset generation from text transcripts with automatic model degradation failovers."""
     client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     prompt = build_gemini_prompt(transcript)
 

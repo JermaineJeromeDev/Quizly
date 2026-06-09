@@ -4,6 +4,8 @@ from rest_framework import serializers
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
+    """Handle user registration input validation and secure user profile creation."""
+
     confirmed_password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -12,7 +14,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}, "email": {"required": True}}
 
     def validate(self, attrs: dict) -> dict:
-        """Prüft, ob die Passwörter übereinstimmen und die E-Mail einzigartig ist."""
+        """Verify that password fields match and the provided email address is unique."""
         if attrs["password"] != attrs["confirmed_password"]:
             raise serializers.ValidationError(
                 {"detail": "Passwörter stimmen nicht überein."}
@@ -26,11 +28,13 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data: dict) -> User:
-        """Erstellt den Benutzer sicher mit gehashtem Passwort."""
+        """Persist a new user instance securely in the database with a hashed password."""
         validated_data.pop("confirmed_password")
         return User.objects.create_user(**validated_data)
 
 
 class UserLoginSerializer(serializers.Serializer):
+    """Validate user credentials payload supplied during authentication login requests."""
+
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)

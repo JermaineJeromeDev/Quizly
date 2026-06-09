@@ -7,21 +7,22 @@ from rest_framework.test import APIClient
 
 @pytest.fixture
 def api_client() -> APIClient:
-    """Bereitet den APIClient fuer die Tests vor."""
+    """Prepare the APIClient instance for executing HTTP requests in tests."""
     return APIClient()
 
 
 @pytest.fixture
 def registration_url() -> str:
-    """Gibt die URL fuer den Registrierungs-Endpunkt zurueck."""
+    """Return the resolved URL path for the user registration endpoint."""
     return reverse("register")
 
 
 @pytest.mark.django_db
 class TestRegistrationHappyPath:
-    """Umfasst alle erfolgreichen Szenarien fuer die Registrierung."""
+    """Contain all successful test scenarios related to user registration operations."""
 
     def test_registration_success(self, api_client, registration_url) -> None:
+        """Verify that providing all valid fields successfully creates a new user account."""
         payload = {
             "username": "testuser",
             "email": "test@example.com",
@@ -37,9 +38,10 @@ class TestRegistrationHappyPath:
 
 @pytest.mark.django_db
 class TestRegistrationUnhappyPath:
-    """Umfasst alle Fehlerszenarien (Validierungsfehler, Duplikate)."""
+    """Contain all error and validation failure scenarios for user registration attempts."""
 
     def test_registration_missing_fields(self, api_client, registration_url) -> None:
+        """Ensure that incomplete payloads are rejected with a 400 Bad Request status."""
         payload = {"username": "testuser"}
         response = api_client.post(registration_url, payload, format="json")
 
@@ -47,6 +49,7 @@ class TestRegistrationUnhappyPath:
         assert "detail" in response.data
 
     def test_registration_password_mismatch(self, api_client, registration_url) -> None:
+        """Ensure that mismatched password fields fail validation and return a clear error message."""
         payload = {
             "username": "testuser",
             "email": "test@example.com",

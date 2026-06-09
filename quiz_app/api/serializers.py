@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    """Konvertiert die Fragen-Objekte exakt in das geforderte JSON-Format."""
+    """Serialize question instances into the precisely specified nested JSON response format."""
 
     class Meta:
         model = Question
@@ -18,7 +18,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class QuizSerializer(serializers.ModelSerializer):
-    """Konvertiert das Quiz samt verschachtelten Fragen fuer die API-Response."""
+    """Serialize quiz instances including their cascade-nested question records for API delivery."""
 
     questions = QuestionSerializer(many=True, read_only=True)
 
