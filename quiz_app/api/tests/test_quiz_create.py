@@ -16,8 +16,8 @@ def api_client() -> APIClient:
 
 @pytest.fixture
 def quiz_create_url() -> str:
-    """Return the resolved URL path for the quiz creation and list endpoint."""
-    return reverse("quiz_list_create")
+    """Return the resolved URL path for the quiz creation and list endpoint from the DRF router."""
+    return reverse("quiz-list")
 
 
 @pytest.fixture
@@ -78,3 +78,4 @@ class TestQuizCreateUnhappyPath:
         payload = {}
         response = logged_in_client.post(quiz_create_url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "url" in response.data

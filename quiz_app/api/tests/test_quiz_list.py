@@ -15,8 +15,8 @@ def api_client() -> APIClient:
 
 @pytest.fixture
 def quiz_list_url() -> str:
-    """Return the resolved URL path for the quiz creation and list endpoint."""
-    return reverse("quiz_list_create")
+    """Return the resolved URL path for the quiz creation and list endpoint from the DRF router."""
+    return reverse("quiz-list")
 
 
 @pytest.fixture

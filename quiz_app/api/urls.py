@@ -1,10 +1,10 @@
-"""URL routing configuration for the quiz application endpoints."""
+"""URL routing mapping configurations binding the active class-based QuizViewSet resource endpoints."""
 
-from django.urls import path
+from rest_framework.routers import DefaultRouter
 
-from .views import create_quiz_view, quiz_detail_view
+from .views import QuizViewSet
 
-urlpatterns = [
-    path("quizzes/", create_quiz_view, name="quiz_list_create"),
-    path("quizzes/<int:quiz_id>/", quiz_detail_view, name="quiz_detail"),
-]
+router = DefaultRouter()
+router.register(r"quizzes", QuizViewSet, basename="quiz")
+
+urlpatterns = router.urls

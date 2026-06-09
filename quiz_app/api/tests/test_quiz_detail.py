@@ -40,7 +40,7 @@ class TestQuizDetailHappyPath:
     def test_get_quiz_detail_success(self, logged_in_setup, create_own_quiz) -> None:
         """Verify that an authorized user can successfully fetch the detailed record of their own quiz."""
         client, _ = logged_in_setup
-        url = reverse("quiz_detail", kwargs={"quiz_id": create_own_quiz.id})
+        url = reverse("quiz-detail", kwargs={"pk": create_own_quiz.id})
 
         response = client.get(url)
         assert response.status_code == status.HTTP_200_OK
@@ -49,7 +49,7 @@ class TestQuizDetailHappyPath:
     def test_patch_quiz_detail_success(self, logged_in_setup, create_own_quiz) -> None:
         """Verify that an authorized user can successfully partially update fields of their own quiz."""
         client, _ = logged_in_setup
-        url = reverse("quiz_detail", kwargs={"quiz_id": create_own_quiz.id})
+        url = reverse("quiz-detail", kwargs={"pk": create_own_quiz.id})
         payload = {"title": "Partially Updated Title"}
 
         response = client.patch(url, payload, format="json")
@@ -60,7 +60,7 @@ class TestQuizDetailHappyPath:
     def test_delete_quiz_success(self, logged_in_setup, create_own_quiz) -> None:
         """Verify that an authorized user can successfully and permanently delete their own quiz record."""
         client, _ = logged_in_setup
-        url = reverse("quiz_detail", kwargs={"quiz_id": create_own_quiz.id})
+        url = reverse("quiz-detail", kwargs={"pk": create_own_quiz.id})
 
         response = client.delete(url)
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -73,7 +73,7 @@ class TestQuizDetailUnhappyPath:
 
     def test_get_quiz_unauthenticated(self, api_client) -> None:
         """Ensure that unauthenticated requests to view quiz details are rejected with a 401 Unauthorized status."""
-        url = reverse("quiz_detail", kwargs={"quiz_id": 1})
+        url = reverse("quiz-detail", kwargs={"pk": 1})
         response = api_client.get(url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
@@ -85,14 +85,14 @@ class TestQuizDetailUnhappyPath:
             user=f_user, title="Fremdes Quiz", video_url="https://url.com"
         )
 
-        url = reverse("quiz_detail", kwargs={"quiz_id": f_quiz.id})
+        url = reverse("quiz-detail", kwargs={"pk": f_quiz.id})
         response = client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_get_quiz_not_found(self, logged_in_setup) -> None:
         """Ensure that looking up a non-existent quiz ID correctly yields a 404 Not Found status."""
         client, _ = logged_in_setup
-        url = reverse("quiz_detail", kwargs={"quiz_id": 9999})
+        url = reverse("quiz-detail", kwargs={"pk": 9999})
         response = client.get(url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -106,7 +106,7 @@ class TestQuizDetailUnhappyPath:
             user=foreign_user, title="Fremdes Quiz", video_url="https://url.com"
         )
 
-        url = reverse("quiz_detail", kwargs={"quiz_id": foreign_quiz.id})
+        url = reverse("quiz-detail", kwargs={"pk": foreign_quiz.id})
         payload = {"title": "Hack-Versuch"}
 
         response = client.patch(url, payload, format="json")
@@ -122,7 +122,7 @@ class TestQuizDetailUnhappyPath:
             user=foreign_user, title="Fremdes Quiz", video_url="https://url.com"
         )
 
-        url = reverse("quiz_detail", kwargs={"quiz_id": foreign_quiz.id})
+        url = reverse("quiz-detail", kwargs={"pk": foreign_quiz.id})
 
         response = client.delete(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN

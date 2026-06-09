@@ -1,12 +1,12 @@
-"""Defines URL patterns for the authentication API endpoints, including user registration, login, logout, and token refresh."""
+"""Defines URL patterns for the class-based authentication API views, including user registration, login, logout, and token refresh."""
 
 from django.urls import path
 
-from .views import login_user, logout_user, refresh_token_view, register_user
+from .views import LoginUserView, LogoutUserView, RefreshTokenView, RegisterUserView
 
 urlpatterns = [
-    path("register/", register_user, name="register"),
-    path("login/", login_user, name="login"),
-    path("logout/", logout_user, name="logout"),
-    path("refresh/", refresh_token_view, name="token_refresh"),
+    path("register/", RegisterUserView.as_view(), name="register"),
+    path("login/", LoginUserView.as_view(), name="login"),
+    path("logout/", LogoutUserView.as_view(), name="logout"),
+    path("refresh/", RefreshTokenView.as_view(), name="token_refresh"),
 ]
