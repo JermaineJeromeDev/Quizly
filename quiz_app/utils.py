@@ -6,6 +6,7 @@ import yt_dlp
 from django.conf import settings
 from google import genai
 from google.genai import types
+from google.genai.errors import ServerError
 
 
 def download_youtube_audio(video_url: str) -> str:
@@ -60,14 +61,24 @@ def build_gemini_prompt(transcript: str) -> str:
     """
 
 
-def generate_quiz_with_gemini(transcript: str) -> dict:
-    """Sendet das Transkript an Gemini Flash und gibt das strukturierte Quiz aus."""
-    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-    prompt = build_gemini_prompt(transcript)
-
+def execute_gemini_call(client, model_name: str, prompt: str) -> str:
+    """Fuehrt den eigentlichen API-Aufruf fuer ein spezifisches Modell aus."""
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=model_name,
         contents=prompt,
         config=types.GenerateContentConfig(response_mime_type="application/json"),
     )
-    return json.loads(response.text)
+    return response.text
+
+
+def generate_quiz_with_gemini(transcript: str) -> dict:
+    """Generiert das Quiz mit automatischem Fallback bei Serverueberlastung."""
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    prompt = build_gemini_prompt(transcript)
+
+    try:
+        raw_text = execute_gemini_call(client, "gemini-2.5-flash", prompt)
+    except ServerError:
+        raw_text = execute_gemini_call(client, "gemini-1.5-flash", prompt)
+
+    return json.loads(raw_text)
