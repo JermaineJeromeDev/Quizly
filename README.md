@@ -128,6 +128,15 @@ Das REST-Backend für die **Quizly**-Plattform verwandelt YouTube-Videos mithilf
 
 Entwickelt nach strengen **TDD-Prinzipien** und den DRF Best Practices. Alle Funktionen sind maximal 14 Zeilen lang.
 
+### Inhaltsverzeichnis
+
+1. [Systemvoraussetzungen](#-systemvoraussetzungen)
+2. [Installation & Setup](#-installation--setup)
+3. [Tech-Stack](#-tech-stack)
+4. [API-Endpunkte](#-api-endpunkte)
+5. [Sicherheit & Status-Codes](#-sicherheit--status-codes)
+6. [Qualitätssicherung](#-qualitätssicherung)
+
 ### 📋 Systemvoraussetzungen
 
 Dieses Projekt benötigt zwingend **FFmpeg** auf Systemebene, um die Audiokonvertierung für Whisper AI durchzuführen.
@@ -177,6 +186,31 @@ Dieses Projekt benötigt zwingend **FFmpeg** auf Systemebene, um die Audiokonver
 | **yt-dlp**       | 2025.x        | YouTube-Audio-Extraktion                  |
 | **whisper**      | latest        | Lokale Transkription der Audiodateien     |
 | **google-genai** | latest        | Google AI Studio SDK (Gemini Integration) |
+
+---
+
+### 🚀 API-Endpunkte
+
+Die Authentifizierung wird vollständig über sichere **HttpOnly-Cookies** (`access_token` und `refresh_token`) abgewickelt. Es sind keine manuellen Authorization-Header im Frontend erforderlich.
+
+#### 🔑 Authentifizierung
+
+| Methode  | Endpunkt              | Beschreibung                                                                                       |
+| :------- | :-------------------- | :------------------------------------------------------------------------------------------------- |
+| **POST** | `/api/register/`      | Registriert ein neues Benutzerkonto. Prüft auf eindeutige E-Mails und übereinstimmende Passwörter. |
+| **POST** | `/api/login/`         | Authentifiziert den Benutzer, liefert Profildaten und setzt sichere HttpOnly-Cookies.              |
+| **POST** | `/api/logout/`        | Loggt den Benutzer sicher aus, leert die Cookies und setzt das Refresh-Token auf die Blacklist.    |
+| **POST** | `/api/token/refresh/` | Erneuert ein abgelaufenes Access-Token mithilfe des HttpOnly-Refresh-Cookies.                      |
+
+#### 🧠 KI-Quiz-Verwaltung
+
+| Methode    | Endpunkt             | Beschreibung                                                                            |
+| :--------- | :------------------- | :-------------------------------------------------------------------------------------- |
+| **POST**   | `/api/quizzes/`      | Generiert ein neues KI-Quiz aus einer YouTube-URL (Nutzt yt_dlp, Whisper und Gemini).   |
+| **GET**    | `/api/quizzes/`      | Listet alle bisherigen Quizze auf, die exakt dem angemeldeten Benutzer gehören.         |
+| **GET**    | `/api/quizzes/{id}/` | Ruft ein spezifisches Quiz samt seinen 10 verschachtelten Fragen ab (Nur Besitzer).     |
+| **PATCH**  | `/api/quizzes/{id}/` | Aktualisiert den Titel und die Beschreibung eines Quizzes partiell (Nur Besitzer).      |
+| **DELETE** | `/api/quizzes/{id}/` | Löscht ein Quiz und alle verknüpften Fragen permanent aus der Datenbank (Nur Besitzer). |
 
 ---
 
