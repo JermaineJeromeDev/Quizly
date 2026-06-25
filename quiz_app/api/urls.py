@@ -1,5 +1,3 @@
-"""URL routing mapping configurations binding the active class-based QuizViewSet resource endpoints."""
-
 from rest_framework.routers import DefaultRouter
 
 from .views import QuizViewSet

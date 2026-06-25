@@ -1,5 +1,3 @@
-"""Defines URL patterns for the class-based authentication API views, including user registration, login, logout, and token refresh."""
-
 from django.urls import path
 
 from .views import LoginUserView, LogoutUserView, RefreshTokenView, RegisterUserView
