@@ -9,12 +9,16 @@ from google.genai import types
 from google.genai.errors import ServerError
 
 
-def download_youtube_audio(video_url: str) -> str:
-    """Extract and download the audio track from a YouTube video locally as an MP3 file."""
+def download_youtube_audio(video_url: str):
+    """Extracts audio for Whisper AND formats the exact standard URL for the database."""
     output_path = os.path.join(settings.BASE_DIR, "media", "audio", "%(id)s.%(ext)s")
+    
+    # Exakt deine Optionen aus den Notizen + der Android-Fix gegen die YouTube 403-Sperre
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path,
+        "quiet": True,
+        "noplaylist": True,
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
@@ -26,9 +30,18 @@ def download_youtube_audio(video_url: str) -> str:
             "youtube": ["player_client=android"]
         }
     }
+    
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        # Hier wird das Video analysiert und heruntergeladen
         info = ydl.extract_info(video_url, download=True)
-        return os.path.join(settings.BASE_DIR, "media", "audio", f"{info['id']}.mp3")
+        video_id = info['id']
+        
+        # Genau wie in deinen Notizen: Pfad wird im Backend sauber formatiert!
+        clean_frontend_url = f"https://youtube.com{video_id}"
+        local_audio_path = os.path.join(settings.BASE_DIR, "media", "audio", f"{video_id}.mp3")
+        
+        # Gibt den lokalen Pfad für Whisper und die saubere URL für die DB zurück
+        return local_audio_path, clean_frontend_url
 
 
 def transcribe_audio_file(file_path: str) -> str:
