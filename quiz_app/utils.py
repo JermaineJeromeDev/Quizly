@@ -22,6 +22,9 @@ def download_youtube_audio(video_url: str) -> str:
                 "preferredquality": "192",
             }
         ],
+        "extractor_args": {
+            "youtube": ["player_client=android"]
+        }
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
@@ -30,7 +33,7 @@ def download_youtube_audio(video_url: str) -> str:
 
 def transcribe_audio_file(file_path: str) -> str:
     """Transcribe a local audio file into plain text using Whisper AI and clean up the file afterward."""
-    model = whisper.load_model("base")
+    model = whisper.load_model("tiny")
     result = model.transcribe(file_path)
     if os.path.exists(file_path):
         os.remove(file_path)
