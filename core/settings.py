@@ -27,7 +27,7 @@ if not SECRET_KEY:
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 
 
 # Application definition
@@ -63,11 +63,15 @@ ROOT_URLCONF = "core.urls"
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5500",
     "http://localhost:5500",
+    "https://jermaine-baerwolf.de",
+    "https://quizly.jermaine-jerome-baerwolf.de",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:5500",
     "http://localhost:5500",
+    "https://jermaine-baerwolf.de",
+    "https://quizly.jermaine-jerome-baerwolf.de",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -136,6 +140,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

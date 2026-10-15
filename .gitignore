@@ -221,3 +221,5 @@ __marimo__/
 
 # Eigene VS Code Projekt-Einstellungen ignorieren
 .vscode/settings.json
+
+static/
