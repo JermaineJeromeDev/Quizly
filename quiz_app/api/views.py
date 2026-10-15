@@ -38,11 +38,12 @@ class QuizViewSet(viewsets.ModelViewSet):
 
         video_url = serializer.validated_data["url"]
         raw_quiz = generate_quiz_from_youtube(video_url)
+        
         quiz = Quiz.objects.create(
             user=request.user,
             title=raw_quiz["title"],
             description=raw_quiz["description"],
-            video_url=video_url,
+            video_url=raw_quiz["formatted_video_url"],
         )
 
         for q_data in raw_quiz["questions"]:

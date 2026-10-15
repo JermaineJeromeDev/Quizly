@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import whisper
 import yt_dlp
@@ -9,11 +10,9 @@ from google.genai import types
 from google.genai.errors import ServerError
 
 
-def download_youtube_audio(video_url: str):
-    """Extracts audio for Whisper AND formats the exact standard URL for the database."""
+def download_youtube_audio(video_url: str) -> str:
+    """Extract and download the audio track from a YouTube video locally as an MP3 file."""
     output_path = os.path.join(settings.BASE_DIR, "media", "audio", "%(id)s.%(ext)s")
-    
-    # Exakt deine Optionen aus den Notizen + der Android-Fix gegen die YouTube 403-Sperre
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path,
@@ -30,18 +29,9 @@ def download_youtube_audio(video_url: str):
             "youtube": ["player_client=android"]
         }
     }
-    
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        # Hier wird das Video analysiert und heruntergeladen
         info = ydl.extract_info(video_url, download=True)
-        video_id = info['id']
-        
-        # Genau wie in deinen Notizen: Pfad wird im Backend sauber formatiert!
-        clean_frontend_url = f"https://youtube.com{video_id}"
-        local_audio_path = os.path.join(settings.BASE_DIR, "media", "audio", f"{video_id}.mp3")
-        
-        # Gibt den lokalen Pfad für Whisper und die saubere URL für die DB zurück
-        return local_audio_path, clean_frontend_url
+        return os.path.join(settings.BASE_DIR, "media", "audio", f"{info['id']}.mp3")
 
 
 def transcribe_audio_file(file_path: str) -> str:
@@ -98,3 +88,18 @@ def generate_quiz_with_gemini(transcript: str) -> dict:
         raw_text = execute_gemini_call(client, "gemini-1.5-flash", prompt)
 
     return json.loads(raw_text)
+
+
+def generate_quiz_from_youtube(video_url: str) -> dict:
+    """Orchestrates the download, transcription and clean URL construction for the frontend."""
+    audio_path = download_youtube_audio(video_url)
+    transcript = transcribe_audio_file(audio_path)
+    quiz_data = generate_quiz_with_gemini(transcript)
+    
+    video_id_match = re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11})', video_url)
+    if video_id_match:
+        quiz_data["formatted_video_url"] = f"https://youtube.com{video_id_match.group(1)}"
+    else:
+        quiz_data["formatted_video_url"] = video_url
+
+    return quiz_data
