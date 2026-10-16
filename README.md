@@ -6,9 +6,9 @@ Select Language: [🇬🇧 English](#-english) | [🇩🇪 Deutsch](#-deutsch)
 
 ## 🇬🇧 English
 
-This is the RESTful Backend for the **Quizly** platform, an innovative application that automatically transforms YouTube videos into interactive quizzes. It uses **FFmpeg** and **Whisper AI** for local audio transcription, orchestrates prompts for the **Gemini Flash API** to generate exactly 10 questions with 4 options each, and features an advanced automatic fallback system for maximum stability.
+This is the RESTful Backend for the **Quizly** platform, an innovative application that automatically transforms YouTube videos into interactive quizzes. It uses **FFmpeg** and **Whisper AI** for local audio transcription, prompts the **Gemini Flash API** for 10 questions with 4 options each, and falls back from Gemini 2.5 Flash to 1.5 Flash on server errors. The generated response is not validated against those counts.
 
-The project was developed using **Test Driven Development (TDD)**, adheres strictly to **DRF best practices**, and enforces a clean code structure with functions capped at 14 lines.
+The project was developed using **Test Driven Development (TDD)** and follows **Django REST Framework (DRF)** conventions.
 
 ### Table of Contents
 
@@ -38,7 +38,7 @@ Unlike standard Django applications, this project relies on **FFmpeg** to extrac
 1. **Clone & Navigate**:
    ```bash
    git clone <your-repository-url>
-   cd quizly_backend
+   cd Quizly
    ```
 2. **Environment Setup**:
    ```bash
@@ -75,28 +75,29 @@ Unlike standard Django applications, this project relies on **FFmpeg** to extrac
 | Tool              | Version | Purpose                                      |
 | :---------------- | :------ | :------------------------------------------- |
 | **Django**        | 5.2.14  | Core Web Framework                           |
-| **DRF**           | 3.15.x  | REST API Toolkit                             |
+| **DRF**           | 3.17.1  | REST API Toolkit                             |
 | **Pytest**        | 9.0.3   | Testing Framework (TDD)                      |
 | **Pytest-Django** | 4.12.0  | Django integration for Pytest                |
 | **Pytest-Cov**    | 7.1.0   | Test Coverage Reporting                      |
-| **yt-dlp**        | 2025.x  | High-performance YouTube Audio Extraction    |
-| **whisper**       | latest  | Local OpenAI Transcription Engine            |
-| **google-genai**  | latest  | Official Google AI Studio SDK (Gemini Flash) |
+| **Celery**         | >=5.4, <6  | Background task processing                  |
+| **yt-dlp**         | 2026.3.17  | High-performance YouTube Audio Extraction   |
+| **openai-whisper** | 20250625   | Local audio transcription                   |
+| **google-genai**   | 2.7.0      | Official Google AI Studio SDK (Gemini Flash) |
 
 ---
 
 ### 🚀 API Endpoints
 
-Authentication is strictly handled via secure **HttpOnly Cookies** (`access_token` and `refresh_token`). No manual authorization headers are required in frontend requests.
+Authentication uses **HttpOnly cookies** (`access_token` and `refresh_token`); frontend requests do not need manual authorization headers. The current implementation sets the cookie `Secure` flag to `False`, so enable it before deploying behind HTTPS.
 
 #### 🔑 Authentication
 
 | Method   | Endpoint              | Description                                                                          |
 | :------- | :-------------------- | :----------------------------------------------------------------------------------- |
 | **POST** | `/api/register/`      | Register a new account. Checks for unique email and matching passwords.              |
-| **POST** | `/api/login/`         | Authenticate user, receive personal details, and set secure HttpOnly cookies.        |
+| **POST** | `/api/login/`         | Authenticate user, receive personal details, and set HttpOnly cookies.               |
 | **POST** | `/api/logout/`        | Log out securely, clear cookies, and push the active refresh token to the blacklist. |
-| **POST** | `/api/token/refresh/` | Renew an expired access token using the HttpOnly refresh token cookie.               |
+| **POST** | `/api/refresh/`       | Renew an expired access token using the HttpOnly refresh token cookie.               |
 
 #### 🧠 AI Quiz Management
 
@@ -105,14 +106,17 @@ Authentication is strictly handled via secure **HttpOnly Cookies** (`access_toke
 | **POST**   | `/api/quizzes/`      | Queue quiz generation and return a generation ID (`202 Accepted`). |
 | **GET**    | `/api/quiz-generations/{id}/` | Poll generation status and receive the quiz when ready. |
 | **GET**    | `/api/quizzes/`      | List all historical quizzes belonging specifically to the authenticated user. |
-| **GET**    | `/api/quizzes/{id}/` | Retrieve a detailed quiz object with its 10 nested questions (Owner only).    |
+| **GET**    | `/api/quizzes/{id}/` | Retrieve a detailed quiz object with its generated questions (Owner only).   |
 | **PATCH**  | `/api/quizzes/{id}/` | Partially update a quiz's title and description (Owner only).                 |
 | **DELETE** | `/api/quizzes/{id}/` | Permanently delete a quiz and all cascade-related questions (Owner only).     |
 
 Quiz generation is asynchronous: `POST /api/quizzes/` returns a `generation_id`
 and `pending` status with HTTP 202. Poll
-`GET /api/quiz-generations/{generation_id}/` until the status is `succeeded`
-(the response includes the quiz) or `failed` (the response includes an error).
+`GET /api/quiz-generations/{generation_id}/` while the status is `pending` or
+`processing`, until it is `succeeded` (the response includes the quiz) or
+`failed` (the response includes an error). The Gemini prompt requests exactly
+10 questions with 4 options each, but the generated response is not validated
+against those counts.
 
 ---
 
@@ -121,12 +125,14 @@ and `pending` status with HTTP 202. Poll
 The API strictly follows REST security and HTTP status code conventions:
 
 - **200 OK**: Resource successfully requested or modified.
-- **201 Created**: Quiz or user successfully generated.
+- **201 Created**: User successfully registered.
+- **202 Accepted**: Quiz generation successfully queued.
 - **204 No Content**: Quiz permanently and successfully deleted.
 - **400 Bad Request**: Invalid input data, password mismatches, or invalid URLs.
-- **401 Unauthorized**: Secure cookies are missing, invalid, or expired.
+- **401 Unauthorized**: Authentication cookies are missing, invalid, or expired.
 - **403 Forbidden**: User is authenticated but lacks permission (e.g., trying to access someone else's quiz).
 - **404 Not Found**: Target quiz does not exist in the database.
+- **503 Service Unavailable**: The Celery broker is unavailable when a generation request is submitted.
 
 ---
 
@@ -141,9 +147,9 @@ _Note: Sensitive configuration files (`.env`) and the local database (`db.sqlite
 
 ## 🇩🇪 Deutsch
 
-Das REST-Backend für die **Quizly**-Plattform verwandelt YouTube-Videos mithilfe von künstlicher Intelligenz in interaktive Quizzes. Das System lädt Tonspuren mit **yt_dlp** herunter, extrahiert Audio über **FFmpeg**, transkribiert Texte lokal via **Whisper AI** und generiert mithilfe der kostenlosen **Gemini Flash API** strukturierte Fragenkataloge. Ein integriertes Failover-System schaltet bei Google-Überlastungen automatisch von Gemini 2.5 auf 1.5 Flash um.
+Das REST-Backend für die **Quizly**-Plattform verwandelt YouTube-Videos mithilfe von künstlicher Intelligenz in interaktive Quizzes. Das System lädt Tonspuren mit **yt-dlp** herunter, extrahiert Audio über **FFmpeg**, transkribiert Texte lokal via **Whisper AI** und generiert mithilfe der **Gemini API** strukturierte Fragenkataloge. Ein integriertes Failover-System wechselt bei einem Gemini-Serverfehler automatisch von Gemini 2.5 Flash auf 1.5 Flash.
 
-Entwickelt nach strengen **TDD-Prinzipien** und den DRF Best Practices. Alle Funktionen sind maximal 14 Zeilen lang.
+Entwickelt nach **TDD-Prinzipien** und den Konventionen von Django REST Framework (DRF).
 
 ### Inhaltsverzeichnis
 
@@ -171,7 +177,7 @@ Dieses Projekt benötigt zwingend **FFmpeg** auf Systemebene, um die Audiokonver
 1. **Repository klonen & Verzeichnis wechseln**:
    ```bash
    git clone <deine-repo-url>
-   cd quizly_backend
+   cd Quizly
    ```
 2. **Virtuelle Umgebung einrichten**:
    ```bash
@@ -210,26 +216,28 @@ Dieses Projekt benötigt zwingend **FFmpeg** auf Systemebene, um die Audiokonver
 | Tool             | Version       | Zweck                                     |
 | :--------------- | :------------ | :---------------------------------------- |
 | **Django**       | 5.2.14        | Kern-Web-Framework                        |
-| **DRF**          | 3.15.x        | REST API Toolkit                          |
+| **DRF**           | 3.17.1         | REST API Toolkit                          |
 | **Pytest & Cov** | 9.0.3 / 7.1.0 | TDD-Testing und Abdeckungsberichte        |
-| **yt-dlp**       | 2025.x        | YouTube-Audio-Extraktion                  |
-| **whisper**      | latest        | Lokale Transkription der Audiodateien     |
-| **google-genai** | latest        | Google AI Studio SDK (Gemini Integration) |
+| **Pytest-Django** | 4.12.0       | Django-Integration für Pytest             |
+| **Celery**       | >=5.4, <6      | Verarbeitung asynchroner Hintergrundaufgaben |
+| **yt-dlp**       | 2026.3.17      | YouTube-Audio-Extraktion                  |
+| **openai-whisper** | 20250625     | Lokale Transkription der Audiodateien     |
+| **google-genai** | 2.7.0          | Google AI Studio SDK (Gemini Integration) |
 
 ---
 
 ### 🚀 API-Endpunkte
 
-Die Authentifizierung wird vollständig über sichere **HttpOnly-Cookies** (`access_token` und `refresh_token`) abgewickelt. Es sind keine manuellen Authorization-Header im Frontend erforderlich.
+Die Authentifizierung verwendet **HttpOnly-Cookies** (`access_token` und `refresh_token`); manuelle Authorization-Header sind im Frontend nicht erforderlich. Die aktuelle Implementierung setzt das Cookie-Flag `Secure` auf `False`. Aktiviere es vor einem Deployment hinter HTTPS.
 
 #### 🔑 Authentifizierung
 
 | Methode  | Endpunkt              | Beschreibung                                                                                       |
 | :------- | :-------------------- | :------------------------------------------------------------------------------------------------- |
 | **POST** | `/api/register/`      | Registriert ein neues Benutzerkonto. Prüft auf eindeutige E-Mails und übereinstimmende Passwörter. |
-| **POST** | `/api/login/`         | Authentifiziert den Benutzer, liefert Profildaten und setzt sichere HttpOnly-Cookies.              |
+| **POST** | `/api/login/`         | Authentifiziert den Benutzer, liefert Profildaten und setzt HttpOnly-Cookies.                       |
 | **POST** | `/api/logout/`        | Loggt den Benutzer sicher aus, leert die Cookies und setzt das Refresh-Token auf die Blacklist.    |
-| **POST** | `/api/token/refresh/` | Erneuert ein abgelaufenes Access-Token mithilfe des HttpOnly-Refresh-Cookies.                      |
+| **POST** | `/api/refresh/`       | Erneuert ein abgelaufenes Access-Token mithilfe des HttpOnly-Refresh-Cookies.                      |
 
 #### 🧠 KI-Quiz-Verwaltung
 
@@ -238,7 +246,7 @@ Die Authentifizierung wird vollständig über sichere **HttpOnly-Cookies** (`acc
 | **POST**   | `/api/quizzes/`      | Startet die Generierung und liefert eine ID (`202 Accepted`).                           |
 | **GET**    | `/api/quiz-generations/{id}/` | Liefert Status und nach Abschluss das fertige Quiz.                             |
 | **GET**    | `/api/quizzes/`      | Listet alle bisherigen Quizze auf, die exakt dem angemeldeten Benutzer gehören.         |
-| **GET**    | `/api/quizzes/{id}/` | Ruft ein spezifisches Quiz samt seinen 10 verschachtelten Fragen ab (Nur Besitzer).     |
+| **GET**    | `/api/quizzes/{id}/` | Ruft ein spezifisches Quiz samt den generierten Fragen ab (Nur Besitzer).               |
 | **PATCH**  | `/api/quizzes/{id}/` | Aktualisiert den Titel und die Beschreibung eines Quizzes partiell (Nur Besitzer).      |
 | **DELETE** | `/api/quizzes/{id}/` | Löscht ein Quiz und alle verknüpften Fragen permanent aus der Datenbank (Nur Besitzer). |
 
@@ -246,15 +254,17 @@ Die Authentifizierung wird vollständig über sichere **HttpOnly-Cookies** (`acc
 
 ### 🛡 Sicherheit & Status-Codes
 
-Die Authentifizierung erfolgt vollständig über sichere **HttpOnly-Cookies** (`access_token` und `refresh_token`), um Cross-Site-Scripting (XSS) im Frontend auszuschließen.
+Der Gemini-Prompt fordert genau 10 Fragen mit jeweils 4 Antwortmöglichkeiten an. Die generierte Antwort wird jedoch nicht auf diese Anzahl geprüft.
 
 - **200 OK**: Anfrage erfolgreich verarbeitet.
-- **201 Created**: Benutzer oder Quiz erfolgreich erstellt.
+- **201 Created**: Benutzerkonto erfolgreich registriert.
+- **202 Accepted**: Quiz-Generierung erfolgreich in die Warteschlange gestellt.
 - **204 No Content**: Quiz permanent und erfolgreich gelöscht.
 - **400 Bad Request**: Ungültige Daten, falsche URLs oder ungleiche Passwörter.
 - **401 Unauthorized**: Authentifizierungs-Cookies fehlen oder sind abgelaufen.
 - **403 Forbidden**: Zugriff verweigert (z. B. Abruf eines fremden Quizzes).
 - **404 Not Found**: Quiz existiert nicht in der Datenbank.
+- **503 Service Unavailable**: Der Celery-Broker ist beim Einreichen einer Quiz-Generierung nicht erreichbar.
 
 ---
 
