@@ -34,33 +34,17 @@ def logged_in_client(api_client) -> APIClient:
 class TestQuizCreateHappyPath:
     """Contain all successful test scenarios related to AI-powered quiz generation."""
 
-    @patch("quiz_app.api.views.generate_quiz_from_youtube")
-    def test_create_quiz_success(
-        self, mock_generate, logged_in_client, quiz_create_url
+    @patch("quiz_app.api.views.generate_quiz_task.delay")
+    def test_create_quiz_enqueues_generation(
+        self, mock_task, logged_in_client, quiz_create_url
     ) -> None:
-        """Verify that a valid YouTube URL successfully creates a quiz object with nested questions using mocked AI handlers."""
-        mock_generate.return_value = {
-            "title": "KI-generiertes Quiz",
-            "description": "Beschreibung des Quizzes",
-            "questions": [
-                {
-                    "question_title": "Welche Farbe hat der Himmel?",
-                    "question_options": ["Blau", "Gruen", "Rot", "Gelb"],
-                    "answer": "Blau",
-                }
-            ],
-        }
-
+        """Verify valid requests are queued and return a pollable generation ID."""
         payload = {"url": "https://youtube.com"}
         response = logged_in_client.post(quiz_create_url, payload, format="json")
 
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["title"] == "KI-generiertes Quiz"
-        assert len(response.data["questions"]) == 1
-        assert (
-            response.data["questions"][0]["question_title"]
-            == "Welche Farbe hat der Himmel?"
-        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert response.data["status"] == "pending"
+        mock_task.assert_called_once_with(response.data["generation_id"])
 
 
 @pytest.mark.django_db

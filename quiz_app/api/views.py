@@ -1,11 +1,13 @@
 from auth_app.api.permissions import IsCookieAuthenticated
 from django.shortcuts import get_object_or_404
+from kombu.exceptions import OperationalError
 from quiz_app.api.serializers import QuizCreateSerializer, QuizSerializer
-from quiz_app.models import Question, Quiz
-from quiz_app.services import generate_quiz_from_youtube
+from quiz_app.models import Quiz, QuizGeneration
+from quiz_app.tasks import generate_quiz_task
 from rest_framework import status, viewsets
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -37,22 +39,51 @@ class QuizViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         video_url = serializer.validated_data["url"]
-        raw_quiz = generate_quiz_from_youtube(video_url)
-        
-        quiz = Quiz.objects.create(
+        generation = QuizGeneration.objects.create(
             user=request.user,
-            title=raw_quiz["title"],
-            description=raw_quiz["description"],
-            video_url=raw_quiz["formatted_video_url"],
+            source_url=video_url,
         )
-
-        for q_data in raw_quiz["questions"]:
-            Question.objects.create(
-                quiz=quiz,
-                question_title=q_data["question_title"],
-                question_options=q_data["question_options"],
-                answer=q_data["answer"],
+        try:
+            generate_quiz_task.delay(str(generation.id))
+        except OperationalError:
+            generation.status = QuizGeneration.Status.FAILED
+            generation.error_message = (
+                "Der Hintergrunddienst ist momentan nicht erreichbar."
+            )
+            generation.save(
+                update_fields=["status", "error_message", "updated_at"]
+            )
+            return Response(
+                {"detail": generation.error_message},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        serializer = self.get_serializer(quiz)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "generation_id": str(generation.id),
+                "status": generation.status,
+            },
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+
+class QuizGenerationStatusView(APIView):
+    """Return the authenticated user's generation state and completed quiz."""
+
+    permission_classes = [IsCookieAuthenticated]
+
+    def get(self, request, pk) -> Response:
+        generation = get_object_or_404(
+            QuizGeneration.objects.select_related("quiz").filter(user=request.user),
+            pk=pk,
+        )
+        return Response(
+            {
+                "generation_id": str(generation.id),
+                "status": generation.status,
+                "error": generation.error_message or None,
+                "quiz": QuizSerializer(generation.quiz).data
+                if generation.quiz
+                else None,
+            }
+        )

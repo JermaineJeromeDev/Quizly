@@ -1,5 +1,36 @@
+import uuid
+
 from django.contrib.auth.models import User
 from django.db import models
+
+
+class QuizGeneration(models.Model):
+    """Track the lifecycle and result of an asynchronously generated quiz."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        SUCCEEDED = "succeeded", "Succeeded"
+        FAILED = "failed", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="quiz_generations"
+    )
+    source_url = models.URLField(max_length=500)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    error_message = models.TextField(blank=True)
+    quiz = models.ForeignKey(
+        "Quiz",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="generation_requests",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Quiz(models.Model):

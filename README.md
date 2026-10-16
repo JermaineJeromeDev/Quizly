@@ -29,6 +29,7 @@ Unlike standard Django applications, this project relies on **FFmpeg** to extrac
   - _Windows_: Install via Chocolatey (`choco install ffmpeg`) or download manually.
   - _Mac_: Install via Homebrew (`brew install ffmpeg`).
   - _Linux_: Install via APT (`sudo apt install ffmpeg`).
+- **Redis**: Required as the Celery broker for background quiz generation.
 
 ---
 
@@ -56,6 +57,16 @@ Unlike standard Django applications, this project relies on **FFmpeg** to extrac
    python manage.py createsuperuser
    python manage.py runserver
    ```
+5. **Start Redis and the background worker** (in separate terminal sessions):
+   ```bash
+   redis-server
+   celery -A core worker --loglevel=INFO
+   ```
+   Set `CELERY_BROKER_URL` in `.env` if Redis is not available at
+   `redis://127.0.0.1:6379/0`. The worker must share access to this project's
+   database and `media/audio` directory.
+   For production, keep Redis and the worker running under a process manager
+   (such as systemd or Supervisor) and enable persistence for the Redis broker.
 
 ---
 
@@ -91,11 +102,17 @@ Authentication is strictly handled via secure **HttpOnly Cookies** (`access_toke
 
 | Method     | Endpoint             | Description                                                                   |
 | :--------- | :------------------- | :---------------------------------------------------------------------------- |
-| **POST**   | `/api/quizzes/`      | Generate a new AI quiz from a YouTube URL (Uses yt_dlp, Whisper, and Gemini). |
+| **POST**   | `/api/quizzes/`      | Queue quiz generation and return a generation ID (`202 Accepted`). |
+| **GET**    | `/api/quiz-generations/{id}/` | Poll generation status and receive the quiz when ready. |
 | **GET**    | `/api/quizzes/`      | List all historical quizzes belonging specifically to the authenticated user. |
 | **GET**    | `/api/quizzes/{id}/` | Retrieve a detailed quiz object with its 10 nested questions (Owner only).    |
 | **PATCH**  | `/api/quizzes/{id}/` | Partially update a quiz's title and description (Owner only).                 |
 | **DELETE** | `/api/quizzes/{id}/` | Permanently delete a quiz and all cascade-related questions (Owner only).     |
+
+Quiz generation is asynchronous: `POST /api/quizzes/` returns a `generation_id`
+and `pending` status with HTTP 202. Poll
+`GET /api/quiz-generations/{generation_id}/` until the status is `succeeded`
+(the response includes the quiz) or `failed` (the response includes an error).
 
 ---
 
@@ -145,6 +162,7 @@ Dieses Projekt benötigt zwingend **FFmpeg** auf Systemebene, um die Audiokonver
   - _Windows_: Über Chocolatey (`choco install ffmpeg`) oder als manueller Download.
   - _Mac_: Über Homebrew (`brew install ffmpeg`).
   - _Linux_: Über den Paketmanager (`sudo apt install ffmpeg`).
+- **Redis**: Wird als Broker für die asynchrone Quiz-Generierung mit Celery benötigt.
 
 ---
 
@@ -173,6 +191,17 @@ Dieses Projekt benötigt zwingend **FFmpeg** auf Systemebene, um die Audiokonver
    python manage.py createsuperuser
    python manage.py runserver
    ```
+5. **Redis und Celery-Worker starten** (in separaten Terminals):
+   ```bash
+   redis-server
+   celery -A core worker --loglevel=INFO
+   ```
+   Falls Redis nicht unter `redis://127.0.0.1:6379/0` erreichbar ist, setze
+   `CELERY_BROKER_URL` in `.env`. Webserver und Worker benötigen Zugriff auf
+   dieselbe Datenbank und dasselbe Verzeichnis `media/audio`. In der
+   Produktionsumgebung sollten Redis und Worker dauerhaft über einen
+   Prozessmanager (z. B. systemd oder Supervisor) laufen; aktiviere außerdem
+   die Redis-Persistenz.
 
 ---
 
@@ -206,7 +235,8 @@ Die Authentifizierung wird vollständig über sichere **HttpOnly-Cookies** (`acc
 
 | Methode    | Endpunkt             | Beschreibung                                                                            |
 | :--------- | :------------------- | :-------------------------------------------------------------------------------------- |
-| **POST**   | `/api/quizzes/`      | Generiert ein neues KI-Quiz aus einer YouTube-URL (Nutzt yt_dlp, Whisper und Gemini).   |
+| **POST**   | `/api/quizzes/`      | Startet die Generierung und liefert eine ID (`202 Accepted`).                           |
+| **GET**    | `/api/quiz-generations/{id}/` | Liefert Status und nach Abschluss das fertige Quiz.                             |
 | **GET**    | `/api/quizzes/`      | Listet alle bisherigen Quizze auf, die exakt dem angemeldeten Benutzer gehören.         |
 | **GET**    | `/api/quizzes/{id}/` | Ruft ein spezifisches Quiz samt seinen 10 verschachtelten Fragen ab (Nur Besitzer).     |
 | **PATCH**  | `/api/quizzes/{id}/` | Aktualisiert den Titel und die Beschreibung eines Quizzes partiell (Nur Besitzer).      |

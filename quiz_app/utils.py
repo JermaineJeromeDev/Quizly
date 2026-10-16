@@ -10,8 +10,8 @@ from google.genai import types
 from google.genai.errors import ServerError
 
 
-def download_youtube_audio(video_url: str) -> str:
-    """Extract and download the audio track from a YouTube video locally as an MP3 file."""
+def download_youtube_audio(video_url: str):
+    """Extract and download audio, returning both the local file path AND the clean YouTube ID."""
     output_path = os.path.join(settings.BASE_DIR, "media", "audio", "%(id)s.%(ext)s")
     ydl_opts = {
         "format": "bestaudio/best",
@@ -31,7 +31,10 @@ def download_youtube_audio(video_url: str) -> str:
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
-        return os.path.join(settings.BASE_DIR, "media", "audio", f"{info['id']}.mp3")
+        video_id = info['id']
+        local_audio_path = os.path.join(settings.BASE_DIR, "media", "audio", f"{video_id}.mp3")
+        
+        return local_audio_path, video_id
 
 
 def transcribe_audio_file(file_path: str) -> str:
@@ -91,15 +94,12 @@ def generate_quiz_with_gemini(transcript: str) -> dict:
 
 
 def generate_quiz_from_youtube(video_url: str) -> dict:
-    """Orchestrates the download, transcription and clean URL construction for the frontend."""
-    audio_path = download_youtube_audio(video_url)
+    """Orchestrates the single-pass download, transcription and clean URL construction for the frontend."""
+    audio_path, video_id = download_youtube_audio(video_url)
+    
     transcript = transcribe_audio_file(audio_path)
     quiz_data = generate_quiz_with_gemini(transcript)
     
-    video_id_match = re.search(r'(?:v=|\/)([0-9A-Za-z_-]{11})', video_url)
-    if video_id_match:
-        quiz_data["formatted_video_url"] = f"https://youtube.com{video_id_match.group(1)}"
-    else:
-        quiz_data["formatted_video_url"] = video_url
+    quiz_data["formatted_video_url"] = f"https://www.youtube.com/watch?v={video_id}"
 
     return quiz_data
